@@ -1,0 +1,187 @@
+using System;
+using System.Collections.Generic;
+
+// Define the User class
+public class User
+{
+    public string LastName { get; set; }
+    public string Email { get; set; }
+    public string PersonalAddress { get; set; }
+    public string Phone { get; set; }
+    public DateTime WorkingStartDate { get; set; }
+    public string Picture { get; set; }
+    public string Role { get; set; }
+    public float Salary { get; set; }
+    public List<SalaryRevision> SalaryRevisions { get; set; }
+
+    public User(string lastName, string email, string personalAddress, string phone, DateTime workingStartDate, string picture, string role, float salary)
+    {
+        LastName = lastName;
+        Email = email;
+        PersonalAddress = personalAddress;
+        Phone = phone;
+        WorkingStartDate = workingStartDate;
+        Picture = picture;
+        Role = role;
+        Salary = salary;
+        SalaryRevisions = new List<SalaryRevision>();
+    }
+
+    public void CalculateSalaryRevision()
+    {
+        // Calculate the time since the last revision
+        DateTime lastRevisionDate = SalaryRevisions.Count > 0 ? SalaryRevisions[SalaryRevisions.Count - 1].Date : DateTime.MinValue;
+        TimeSpan timeSinceLastRevision = DateTime.Today - lastRevisionDate;
+
+        // Only perform revision if at least 3 months have passed since last revision
+        if (timeSinceLastRevision.TotalDays >= 90)
+        {
+            // Calculate the number of 3-month periods to revise
+            int numPeriodsToRevise = (int)Math.Floor(timeSinceLastRevision.TotalDays / 90);
+
+            // Calculate the salary increase percentage based on the user's role
+            float salaryIncreasePercentage;
+            switch (Role)
+            {
+                case "Worker":
+                    salaryIncreasePercentage = 0.05f;
+                    break;
+                case "Specialist":
+                    salaryIncreasePercentage = 0.08f;
+                    break;
+                case "Manager":
+                    salaryIncreasePercentage = 0.12f;
+                    break;
+                default:
+                    salaryIncreasePercentage = 0f;
+                    break;
+            }
+
+            // Apply the salary increase for each period
+            for (int i = 0; i < numPeriodsToRevise; i++)
+            {
+                float salaryIncrease = Salary * salaryIncreasePercentage;
+                Salary += salaryIncrease;
+                SalaryRevisions.Add(new SalaryRevision(Salary - salaryIncrease, DateTime.Today.AddMonths(-(i + 1) * 3)));
+            }
+        }
+    }
+}
+
+// Define the SalaryRevision class
+public class SalaryRevision
+{
+    public float Salary { get; set; }
+    public DateTime Date { get; set; }
+
+    public SalaryRevision(float salary, DateTime date)
+    {
+        Salary = salary;
+        Date = date;
+    }
+}
+
+// Define the UserManager class
+public class UserManager
+{
+    public List<User> Users { get; set; }
+
+    public UserManager()
+    {
+        Users = new List<User>();
+    }
+
+    public void AddUser(User user)
+    {
+        Users.Add(user);
+    }
+
+    public void RemoveUser(User user)
+    {
+        Users.Remove(user);
+    }
+
+    public void UpdateUser(User user)
+    {
+        // No need to do anything since the user object is a reference to the same object in the list
+    }
+
+    public List<User> GetAllUsers()
+    {
+        return Users;
+    }
+
+    public List<SalaryRevision> GetSalaryRevisions(User user)
+    {
+        return user.SalaryRevisions;
+    }
+
+    public List<string[]> GetHRList()
+    {
+        List<string[]> hrList = new List<string[]>();
+        // Code to populate
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    private readonly ILogger<UsersController> _logger;
+    private readonly UserManager _userManager;
+
+    public UsersController(ILogger<UsersController> logger, UserManager userManager)
+    {
+        _logger = logger;
+        _userManager = userManager;
+    }
+
+    [HttpGet]
+    public IActionResult GetAllUsers()
+    {
+        var users = _userManager.GetAllUsers();
+        return Ok(users);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetUser(int id)
+    {
+        var user = _userManager.GetUser(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        return Ok(user);
+    }
+
+    [HttpPost]
+    public IActionResult AddUser(User user)
+    {
+        _userManager.AddUser(user);
+        return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult UpdateUser(int id, User user)
+    {
+        if (id != user.Id)
+        {
+            return BadRequest();
+        }
+        _userManager.UpdateUser(user);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult DeleteUser(int id)
+    {
+        var user = _userManager.GetUser(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        _userManager.RemoveUser(user);
+        return NoContent();
+    }
+}
+
