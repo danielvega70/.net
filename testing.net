@@ -1,0 +1,102 @@
+using NUnit.Framework;
+using System;
+
+[TestFixture]
+public class UserTests
+{
+    private User _user;
+
+    [SetUp]
+    public void SetUp()
+    {
+        _user = new User("Doe", "john.doe@example.com", "123 Main St", "555-1234", 20220101, "https://example.com/john-doe.jpg", "Worker", 50000f);
+    }
+
+    [Test]
+    public void CalculateSalaryRevision_ShouldNotRevise_WhenLessThanThreeMonthsSinceLastRevision()
+    {
+        // Arrange
+        _user.SalaryRevisions.Add(new SalaryRevision(48000f, DateTime.Today.AddDays(-60)));
+
+        // Act
+        _user.CalculateSalaryRevision();
+
+        // Assert
+        Assert.AreEqual(50000f, _user.Salary);
+        Assert.AreEqual(1, _user.SalaryRevisions.Count);
+    }
+
+    [Test]
+    public void CalculateSalaryRevision_ShouldReviseOnce_WhenThreeMonthsSinceLastRevision()
+    {
+        // Arrange
+        _user.SalaryRevisions.Add(new SalaryRevision(48000f, DateTime.Today.AddDays(-90)));
+
+        // Act
+        _user.CalculateSalaryRevision();
+
+        // Assert
+        Assert.AreEqual(50000f * 1.05f, _user.Salary);
+        Assert.AreEqual(2, _user.SalaryRevisions.Count);
+    }
+
+    [Test]
+    public void CalculateSalaryRevision_ShouldReviseTwice_WhenSixMonthsSinceLastRevision()
+    {
+        // Arrange
+        _user.SalaryRevisions.Add(new SalaryRevision(48000f, DateTime.Today.AddDays(-180)));
+
+        // Act
+        _user.CalculateSalaryRevision();
+
+        // Assert
+        Assert.AreEqual(50000f * 1.05f * 1.05f, _user.Salary);
+        Assert.AreEqual(3, _user.SalaryRevisions.Count);
+    }
+}
+
+[TestFixture]
+public class UserManagerTests
+{
+    private UserManager _userManager;
+
+    [SetUp]
+    public void SetUp()
+    {
+        _userManager = new UserManager();
+        _userManager.AddUser(new User("Doe", "john.doe@example.com", "123 Main St", "555-1234", 20220101, "https://example.com/john-doe.jpg", "Worker", 50000f));
+        _userManager.AddUser(new User("Smith", "jane.smith@example.com", "456 Elm St", "555-5678", 20210101, "https://example.com/jane-smith.jpg", "Specialist", 70000f));
+    }
+
+    [Test]
+    public void AddUser_ShouldAddUserToUsersList()
+    {
+        // Arrange
+        User newUser = new User("Brown", "joe.brown@example.com", "789 Oak St", "555-9012", 20210301, "https://example.com/joe-brown.jpg", "Manager", 90000f);
+
+        // Act
+        _userManager.AddUser(newUser);
+
+        // Assert
+        Assert.Contains(newUser, _userManager.Users);
+    }
+
+    [Test]
+    public void RemoveUser_ShouldRemoveUserFromUsersList()
+    {
+        // Arrange
+        User userToRemove = _userManager.Users[0];
+
+        // Act
+        _userManager.RemoveUser(userToRemove);
+
+        // Assert
+        Assert.DoesNotContain(userToRemove, _userManager.Users);
+    }
+
+    [Test]
+    public void UpdateUser_ShouldNotUpdateUsersList_WhenUserObjectIsModified()
+    {
+        // Arrange
+        User userToUpdate = _userManager.Users[0];
+       
